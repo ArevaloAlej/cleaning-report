@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧹 Cleaning Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--border:#21262d;--text:#e6edf3;--muted:#8b949e;
+  --sofia:#1a4a7a;--sofia-light:#2d6db5;--yury:#1a5c2a;--yury-light:#2d8a40;
+  --day:#2c3e50;--unit:#34495e;--tarea:#1e5c1e;--noclean:#4a1a1a;
+  --accent:#388bfd;--green:#2ea043;--red:#f85149;--yellow:#d29922;
+}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:10px}
+.header h1{font-size:17px;font-weight:700}
+.header p{font-size:11px;color:var(--muted)}
+.header-right{display:flex;align-items:center;gap:8px}
+.gh-status{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--bg)}
+.gh-status:hover{border-color:var(--accent)}
+.dot{width:8px;height:8px;border-radius:50%;background:#484f58;flex-shrink:0}
+.dot.ok{background:var(--green)}
+.dot.err{background:var(--red)}
+.dot.saving{background:var(--yellow);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:#238636}
+
+/* APP LAYOUT */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:210px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-title{padding:10px 14px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.nav-list{flex:1;overflow-y:auto;padding:6px}
+.nav-item{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:#c9d1d9;display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:2px;user-select:none}
+.nav-item:hover{background:#21262d}
+.nav-item.active{background:var(--sofia);color:#fff}
+.nav-item-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.nav-del{opacity:0;background:none;border:none;color:#6e7681;cursor:pointer;font-size:16px;padding:0 2px;line-height:1;flex-shrink:0}
+.nav-item:hover .nav-del{opacity:1}
+.nav-del:hover{color:var(--red)}
+.nav-new{margin:8px;padding:8px;background:transparent;border:1px dashed var(--border);border-radius:6px;color:var(--muted);font-size:12px;cursor:pointer;width:calc(100% - 16px)}
+.nav-new:hover{border-color:var(--accent);color:var(--accent)}
+.nav-empty{padding:16px;font-size:12px;color:#484f58;text-align:center}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.import-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+.import-bar input[type=text]{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:13px;outline:none;width:160px}
+.import-bar input[type=text]:focus{border-color:var(--accent)}
+.import-bar textarea{flex:1;min-width:200px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;font-family:monospace;padding:5px 10px;resize:none;height:34px;outline:none;line-height:1.4}
+.import-bar textarea:focus{border-color:var(--accent)}
+input[type=file]{display:none}
+.content{flex:1;overflow-y:auto;padding:20px}
+
+/* EMPTY */
+.empty{text-align:center;padding:70px 20px;color:#484f58}
+.empty .icon{font-size:44px;margin-bottom:14px}
+.empty p{font-size:14px;line-height:1.7}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:18px}
+.tab{padding:7px 16px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+.tab.active{background:var(--sofia);border-color:var(--sofia-light);color:#fff}
+.tab:hover:not(.active){border-color:var(--muted);color:#c9d1d9}
+
+/* WEEK HEADER */
+.week-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.week-head h2{font-size:20px;font-weight:700}
+.week-head span{font-size:12px;color:#484f58}
+
+/* REPORT TABLE */
+.report-wrap{overflow-x:auto}
+.rtable{border-collapse:collapse;min-width:100%}
+.rtable th,.rtable td{padding:0;margin:0;border:none}
+
+/* Title row */
+.row-title td{background:#0f3460;color:#fff;font-size:15px;font-weight:700;padding:12px 18px;text-align:center}
+
+/* Staff header row */
+.row-staffhdr .cell-staff{font-size:13px;font-weight:700;padding:10px 14px;text-align:center;color:#fff}
+.row-staffhdr .cell-status-hdr{font-size:10px;font-style:italic;padding:8px 10px;text-align:center;color:#ccc;opacity:.8}
+.staff-sofia{background:var(--sofia)}
+.staff-sofia-light{background:var(--sofia-light)}
+.staff-yury{background:var(--yury)}
+.staff-yury-light{background:var(--yury-light)}
+
+/* Day row */
+.row-day td{background:var(--day);color:#ecf0f1;font-weight:700;font-size:12px;padding:7px 14px}
+.row-day .day-count{color:#90caf9;font-weight:400;font-style:italic;font-size:11px;text-align:right}
+
+/* Unit rows */
+.cell-unit{background:var(--unit);color:#ecf0f1;font-size:12px;padding:7px 12px;white-space:nowrap}
+.cell-estado{font-size:11px;font-weight:700;padding:5px 8px;text-align:center;cursor:pointer;min-width:140px;border-radius:0}
+.cell-tarea{background:var(--tarea);color:#c8e6c9;font-size:11px;font-weight:700;padding:7px 14px}
+.cell-none{background:var(--noclean);color:#ef9a9a;font-size:11px;font-style:italic;padding:7px 14px}
+.cell-empty{background:#1a1a2e}
+.row-sep td{height:6px;background:#0d1117}
+
+/* Status select */
+select.estado-sel{width:100%;border:none;outline:none;font-size:11px;font-weight:700;padding:6px 8px;cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:center;border-radius:0}
+
+/* WHATSAPP */
+.wa-grid{display:flex;gap:16px;flex-wrap:wrap}
+.wa-card{flex:1;min-width:280px;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.wa-card-header{padding:14px 16px;display:flex;align-items:center;gap:10px}
+.wa-card-header .icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.wa-card-header .name{font-size:15px;font-weight:700}
+.wa-card-header .count{font-size:11px;color:var(--muted)}
+.wa-msg{font-family:'Courier New',monospace;font-size:11.5px;line-height:1.75;padding:14px 16px;background:#0a0f17;color:#c9d1d9;white-space:pre-wrap;max-height:320px;overflow-y:auto}
+.wa-copy{width:100%;padding:11px;background:#25d366;border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.wa-copy:hover{background:#1ebe5d}
+.wa-copy.done{background:#128C7E}
+
+/* DATE PICKER */
+.date-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.date-row label{font-size:13px;color:var(--muted)}
+.date-row input[type=date]{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;outline:none}
+.today-btn{padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:#c9d1d9;font-size:12px;cursor:pointer}
+.today-btn:hover{border-color:var(--muted)}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:420px;max-width:95vw}
+.modal h3{font-size:16px;margin-bottom:6px}
+.modal p{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none}
+.field input:focus{border-color:var(--accent)}
+.field small{font-size:11px;color:#484f58;margin-top:4px;display:block}
+.modal-footer{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.alert{padding:10px 14px;border-radius:7px;font-size:12px;margin-bottom:12px;border:1px solid}
+.alert.warn{background:#1a1400;border-color:var(--yellow);color:#e3b341}
+.alert.ok{background:#0a1a0a;border-color:var(--green);color:#56d364}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+
+/* STATUS COLORS */
+.s0{background:#fff2cc;color:#7d4e00}
+.s1{background:#fce5cd;color:#7d3200}
+.s2{background:#d9ead3;color:#274e13}
+.s3{background:#f4cccc;color:#990000}
+.s4{background:#cfe2f3;color:#1155cc}
+.s5{background:#ffe599;color:#7d4e00}
+.s6{background:#d9d2e9;color:#4a1f7c}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span style="font-size:24px">🧹</span>
+    <div><h1>Cleaning Report</h1><p>Reporte semanal · WhatsApp · Historial</p></div>
+  </div>
+  <div class="header-right">
+    <div class="gh-status" onclick="openSettings()" id="ghStatus">
+      <div class="dot" id="ghDot"></div>
+      <span id="ghLabel">Configurar GitHub</span>
+    </div>
+    <button class="btn primary" onclick="saveToGitHub()" id="saveBtn" style="display:none">💾 Guardar</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-title">📚 Historial</div>
+    <div class="nav-list" id="navList"><div class="nav-empty">Sin semanas aún</div></div>
+    <button class="nav-new" onclick="openImport()">+ Nueva semana</button>
+  </div>
+  <div class="main">
+    <div class="import-bar" id="importBar" style="display:none">
+      <label style="font-size:12px;color:var(--muted);white-space:nowrap">Semana:</label>
+      <input type="text" id="weekLabel" placeholder="Ej: Junio Semana 1">
+      <textarea id="csvInput" placeholder='"CHECK-OUT","LISTING'\''S NICKNAME"&#10;"2026-06-02 11:00 AM","7842-1"&#10;...'></textarea>
+      <button class="btn" onclick="document.getElementById('fileIn').click()">📂 CSV</button>
+      <input type="file" id="fileIn" accept=".csv,.txt" onchange="loadFile(this)">
+      <button class="btn primary" onclick="importWeek()">⚡ Importar</button>
+      <button class="btn" onclick="closeImport()" style="color:var(--muted)">✕</button>
+    </div>
+    <div class="content" id="content">
+      <div class="empty"><div class="icon">📋</div><p>Configura GitHub en la esquina superior derecha,<br>luego haz clic en <strong>+ Nueva semana</strong> para importar el CSV.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay" id="settingsModal">
+  <div class="modal">
+    <h3>⚙️ Conexión con GitHub</h3>
+    <p>Los datos se guardan en un archivo <code>data.json</code> en tu repositorio de GitHub. Solo necesitas configurar esto una vez por dispositivo.</p>
+    <div id="settingsAlert"></div>
+    <div class="field">
+      <label>Usuario de GitHub</label>
+      <input type="text" id="ghOwner" placeholder="tu-usuario">
+    </div>
+    <div class="field">
+      <label>Nombre del repositorio</label>
+      <input type="text" id="ghRepo" placeholder="cleaning-report">
+    </div>
+    <div class="field">
+      <label>Personal Access Token <span style="color:var(--muted);font-weight:400">(solo para guardar)</span></label>
+      <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
+      <small>Crea uno en GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → con permiso <strong>repo</strong> o <strong>public_repo</strong>.</small>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSettings()">Cancelar</button>
+      <button class="btn primary" onclick="saveSettings()">Guardar configuración</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const UNIT_MAP = [
+  { p:"7830", s:"SOFIA" }, { p:"7834", s:"SOFIA" }, { p:"7842", s:"SOFIA" },
+  { p:"jeff", s:"Yury"  }, { p:"699",  s:"Yury"  },
+];
+const STAFF   = ["SOFIA","Yury"];
+const TAREAS  = {
+  "SOFIA": { 1:["📦 Revisar armarios de reserva"], 2:["🛁 Baño basement"], 3:["📦 Storage"], 5:["🌿 Exteriores"] },
+  "Yury":  { 1:["📦 Revisar armarios de reserva"] },
+};
+const ESTADOS = [
+  { v:"*Entra 1PM*",       cls:"s0", emoji:"🕐" },
+  { v:"*Entra 3PM*",       cls:"s1", emoji:"🕒" },
+  { v:"*Sin check-in*",    cls:"s2", emoji:"✅" },
+  { v:"*Mantenimiento*",   cls:"s3", emoji:"🔧" },
+  { v:"*Touch*",           cls:"s4", emoji:"✨" },
+  { v:"*Por confirmar*",   cls:"s5", emoji:"❓" },
+  { v:"*Húesped en casa*", cls:"s6", emoji:"🏠" },
+];
+const DIAS  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const HOUR  = "3PM";
+
+// ═══════════════════════════════════════════════════════
+// GITHUB STORAGE
+// ═══════════════════════════════════════════════════════
+let ghCfg  = JSON.parse(localStorage.getItem("ghCfg") || "{}");
+let fileSHA = null;
+let appData = { weeks: [] };
+let dirty   = false;
+let saveTimer = null;
+
+function getApiUrl() {
+  return `https://api.github.com/repos/${ghCfg.owner}/${ghCfg.repo}/contents/data.json`;
+}
+
+async function loadFromGitHub() {
+  if (!ghCfg.owner || !ghCfg.repo) { setDot("idle","Sin configurar"); renderNav(); return; }
+  setDot("saving","Cargando…");
+  try {
+    const headers = {};
+    if (ghCfg.token) headers["Authorization"] = `token ${ghCfg.token}`;
+    const r = await fetch(getApiUrl(), { headers });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    fileSHA  = j.sha;
+    appData  = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\s/g,"")))));
+    setDot("ok", `${ghCfg.owner}/${ghCfg.repo}`);
+    renderNav();
+    if (appData.weeks.length > 0) loadWeek(appData.weeks[0].id);
+    else showEmpty();
+  } catch(e) {
+    setDot("err","Error al cargar · Verifica config");
+    console.error(e);
+    renderNav();
+  }
+}
+
+async function saveToGitHub() {
+  if (!ghCfg.token) { alert("Necesitas configurar el Token de GitHub para guardar."); openSettings(); return; }
+  setDot("saving","Guardando…");
+  document.getElementById("saveBtn").textContent = "⏳ Guardando…";
+  try {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(appData, null, 2))));
+    const body    = { message:`Update ${new Date().toISOString().slice(0,10)}`, content, sha: fileSHA };
+    const r = await fetch(getApiUrl(), {
+      method: "PUT",
+      headers: { "Authorization":`token ${ghCfg.token}`, "Content-Type":"application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    fileSHA = j.content.sha;
+    dirty   = false;
+    setDot("ok", `${ghCfg.owner}/${ghCfg.repo}`);
+    document.getElementById("saveBtn").textContent = "✅ Guardado";
+    setTimeout(()=>{ document.getElementById("saveBtn").textContent = "💾 Guardar"; },2000);
+  } catch(e) {
+    setDot("err","Error al guardar");
+    document.getElementById("saveBtn").textContent = "💾 Guardar";
+    alert("Error al guardar: " + e.message);
+  }
+}
+
+function scheduleSave() {
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToGitHub, 3000);
+}
+
+function setDot(state, label) {
+  const dot = document.getElementById("ghDot");
+  const lbl = document.getElementById("ghLabel");
+  dot.className = "dot" + (state==="ok"?" ok":state==="err"?" err":state==="saving"?" saving":"");
+  lbl.textContent = label;
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById("ghOwner").value = ghCfg.owner || "";
+  document.getElementById("ghRepo").value  = ghCfg.repo  || "";
+  document.getElementById("ghToken").value = ghCfg.token || "";
+  document.getElementById("settingsAlert").innerHTML = "";
+  document.getElementById("settingsModal").classList.add("open");
+}
+function closeSettings() { document.getElementById("settingsModal").classList.remove("open"); }
+function saveSettings() {
+  const owner = document.getElementById("ghOwner").value.trim();
+  const repo  = document.getElementById("ghRepo").value.trim();
+  const token = document.getElementById("ghToken").value.trim();
+  if (!owner || !repo) {
+    document.getElementById("settingsAlert").innerHTML = '<div class="alert warn">Completa usuario y repositorio.</div>';
+    return;
+  }
+  ghCfg = { owner, repo, token };
+  localStorage.setItem("ghCfg", JSON.stringify(ghCfg));
+  closeSettings();
+  document.getElementById("saveBtn").style.display = token ? "" : "none";
+  loadFromGitHub();
+}
+document.getElementById("settingsModal").onclick = e => { if(e.target===document.getElementById("settingsModal")) closeSettings(); };
+
+// ═══════════════════════════════════════════════════════
+// NAV / HISTORY
+// ═══════════════════════════════════════════════════════
+let activeId = null;
+
+function renderNav() {
+  const list = document.getElementById("navList");
+  if (!appData.weeks.length) { list.innerHTML = '<div class="nav-empty">Sin semanas aún</div>'; return; }
+  list.innerHTML = appData.weeks.map(w => `
+    <div class="nav-item ${w.id===activeId?'active':''}" onclick="loadWeek('${w.id}')">
+      <span class="nav-item-label">${w.label}</span>
+      <button class="nav-del" onclick="deleteWeek(event,'${w.id}')">×</button>
+    </div>`).join("");
+}
+
+function deleteWeek(e, id) {
+  e.stopPropagation();
+  if (!confirm("¿Eliminar esta semana del historial?")) return;
+  appData.weeks = appData.weeks.filter(w => w.id !== id);
+  if (activeId === id) { activeId = null; showEmpty(); }
+  renderNav();
+  scheduleSave();
+}
+
+function loadWeek(id) {
+  const week = appData.weeks.find(w => w.id === id);
+  if (!week) return;
+  activeId = id;
+  closeImport();
+  renderNav();
+  renderWeek(week);
+}
+
+function showEmpty() {
+  document.getElementById("content").innerHTML =
+    '<div class="empty"><div class="icon">📅</div><p>Selecciona una semana del historial<br>o haz clic en <strong>+ Nueva semana</strong>.</p></div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORT
+// ═══════════════════════════════════════════════════════
+function openImport() {
+  activeId = null;
+  renderNav();
+  document.getElementById("importBar").style.display = "flex";
+  document.getElementById("csvInput").value = "";
+  document.getElementById("weekLabel").value = suggestLabel();
+  document.getElementById("content").innerHTML =
+    '<div class="empty"><div class="icon">📂</div><p>Pega el CSV o sube el archivo.<br>Columnas requeridas: <strong>CHECK-OUT</strong> y <strong>LISTING\'S NICKNAME</strong>.</p></div>';
+}
+function closeImport() { document.getElementById("importBar").style.display = "none"; }
+
+function suggestLabel() {
+  const d = new Date();
+  return `${MESES[d.getMonth()].charAt(0).toUpperCase()+MESES[d.getMonth()].slice(1)} Semana ${Math.ceil(d.getDate()/7)}`;
+}
+
+function loadFile(input) {
+  const f = input.files[0]; if (!f) return;
+  const m = f.name.match(/(\d{4}-\d{2}-\d{2})/);
+  if (m) {
+    const d = new Date(m[1]+"T12:00:00");
+    document.getElementById("weekLabel").value =
+      `${MESES[d.getMonth()].charAt(0).toUpperCase()+MESES[d.getMonth()].slice(1)} Semana ${Math.ceil(d.getDate()/7)}`;
+  }
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById("csvInput").value = e.target.result; };
+  reader.readAsText(f);
+  input.value = "";
+}
+
+function importWeek() {
+  const csv   = document.getElementById("csvInput").value.trim();
+  const label = document.getElementById("weekLabel").value.trim() || suggestLabel();
+  if (!csv) { showAlert("Pega el CSV primero.","warn"); return; }
+
+  const parsed = parseCSV(csv);
+  if (parsed.error) { showAlert(parsed.error,"warn"); return; }
+
+  const { bookings, unknown } = processBookings(parsed);
+  if (!bookings.length) { showAlert("No se encontraron salidas válidas. Verifica el CSV.","warn"); return; }
+
+  const id      = "w" + Date.now();
+  const statuses = {};
+  // Pre-asignar estados por defecto detectando turnos
+  const unitDates = {};
+  bookings.forEach(b => { if(!unitDates[b.room]) unitDates[b.room]=[]; unitDates[b.room].push(b.date); });
+  const turnoSet = new Set();
+  Object.entries(unitDates).forEach(([room,dates])=>{
+    const s=[...new Set(dates)].sort();
+    if(s.length>1) s.slice(0,-1).forEach(d=>turnoSet.add(`${d}|${room}`));
+  });
+  bookings.forEach(b=>{
+    const key = `${b.date}|${b.room}`;
+    statuses[key] = turnoSet.has(key) ? "*Entra 3PM*" : "*Sin check-in*";
+  });
+
+  const week = { id, label, bookings, statuses, importedAt: new Date().toISOString() };
+  appData.weeks.unshift(week);
+  closeImport();
+  activeId = id;
+  renderNav();
+  renderWeek(week);
+  scheduleSave();
+
+  if (unknown.size) {
+    showInlineAlert(`⚠️ Unidades sin equipo asignado (omitidas): ${[...unknown].join(", ")}`, "warn");
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PARSE
+// ═══════════════════════════════════════════════════════
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l=>l.trim());
+  if (lines.length < 2) return { error:"CSV vacío o solo encabezados." };
+  const sep = lines[0].includes("\t") ? "\t" : ",";
+  const pl  = line => {
+    const res=[]; let cur="",inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;continue;}
+      if(c===sep&&!inQ){res.push(cur.trim());cur="";continue;}
+      cur+=c;
+    }
+    res.push(cur.trim()); return res;
+  };
+  const headers = pl(lines[0]).map(h=>h.toLowerCase().replace(/[''']/g,"'").trim());
+  const rows    = lines.slice(1).map(pl);
+  const iDate   = headers.findIndex(h=>h.includes("check-out")||h.includes("checkout")||h.includes("check out"));
+  const iRoom   = headers.findIndex(h=>h.includes("nickname")||h.includes("listing")||h.includes("propiedad")||h.includes("room")||h.includes("unit"));
+  if (iDate===-1||iRoom===-1) return { error:`Columnas no encontradas. Detectadas: ${headers.join(", ")}. Necesito CHECK-OUT y LISTING'S NICKNAME.` };
+  return { rows, iDate, iRoom };
+}
+
+function processBookings({ rows, iDate, iRoom }) {
+  const bookings=[], unknown=new Set();
+  rows.forEach(r=>{
+    if(r.length<2) return;
+    const dt = parseDT(r[iDate]); if(!dt) return;
+    const room = (r[iRoom]||"").trim(); if(!room) return;
+    const staff = detectStaff(room);
+    if(!staff){ unknown.add(room); return; }
+    bookings.push({ date:dateKey(dt), room, staff });
+  });
+  return { bookings, unknown };
+}
+
+function detectStaff(room) {
+  const r = room.toLowerCase().trim();
+  const m = UNIT_MAP.find(u=>r.startsWith(u.p.toLowerCase()));
+  return m ? m.s : null;
+}
+
+function parseDT(val) {
+  if(!val) return null;
+  if(val instanceof Date) return isNaN(val)?null:val;
+  const s=String(val).trim();
+  const m=s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if(m) return new Date(m[1]+"T12:00:00");
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function getMondayOf(date) {
+  const d=new Date(date), dow=d.getDay();
+  d.setDate(d.getDate()+(dow===0?-6:1-dow)); return d;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER WEEK
+// ═══════════════════════════════════════════════════════
+function renderWeek(week) {
+  const { label, bookings, statuses, importedAt } = week;
+  const dateStr = importedAt ? new Date(importedAt).toLocaleDateString("es") : "";
+  document.getElementById("content").innerHTML = `
+    <div class="week-head">
+      <h2>${label}</h2>
+      <span>${bookings.length} limpiezas · Importado ${dateStr}</span>
+    </div>
+    <div id="inlineAlert"></div>
+    <div class="tabs">
+      <button class="tab active" id="tab-r" onclick="showTab('r')">📋 Reporte semanal</button>
+      <button class="tab" id="tab-w" onclick="showTab('w')">📲 Mensajes WhatsApp</button>
+    </div>
+    <div id="pane-r"></div>
+    <div id="pane-w" style="display:none"></div>`;
+
+  buildReport(week);
+  buildWA(week);
+}
+
+function showTab(t) {
+  document.getElementById("tab-r").classList.toggle("active",t==="r");
+  document.getElementById("tab-w").classList.toggle("active",t==="w");
+  document.getElementById("pane-r").style.display=t==="r"?"":"none";
+  document.getElementById("pane-w").style.display=t==="w"?"":"none";
+}
+
+// ═══════════════════════════════════════════════════════
+// BUILD REPORT
+// ═══════════════════════════════════════════════════════
+function buildReport(week) {
+  const { bookings, statuses, id:wid } = week;
+
+  // Week range Mon→Sun
+  const sorted = bookings.map(b=>b.date).sort();
+  if (!sorted.length) { document.getElementById("pane-r").innerHTML='<div style="color:var(--muted);padding:20px">Sin datos.</div>'; return; }
+  const monday = getMondayOf(new Date(sorted[0]+"T12:00:00"));
+  const days   = [];
+  for(let d=new Date(monday);days.length<7;d.setDate(d.getDate()+1)) days.push(dateKey(new Date(d)));
+
+  // Schedule
+  const sched = {};
+  bookings.forEach(b=>{ if(!sched[b.date])sched[b.date]={}; if(!sched[b.date][b.staff])sched[b.date][b.staff]=[]; sched[b.date][b.staff].push(b.room); });
+
+  const cols = STAFF.length;
+  let html = `<div class="report-wrap"><table class="rtable">`;
+
+  // Staff headers
+  html += `<tr class="row-staffhdr">`;
+  STAFF.forEach(s=>{
+    const cls = s==="SOFIA" ? "staff-sofia" : "staff-yury";
+    const cls2 = s==="SOFIA" ? "staff-sofia-light" : "staff-yury-light";
+    html += `<td class="cell-staff ${cls}">${s==="SOFIA"?"👩":"👩"} ${s}</td><td class="cell-status-hdr ${cls2}">Estado ▼</td>`;
+  });
+  html += `</tr>`;
+
+  // Days
+  for (const dk of days) {
+    const d       = new Date(dk+"T12:00:00");
+    const dow     = d.getDay();
+    const dayName = DIAS[dow];
+    const dayNum  = d.getDate();
+    const monName = MESES[d.getMonth()].slice(0,3);
+    const totalCO = STAFF.reduce((s,st)=>(sched[dk]?.[st]?.length||0)+s,0);
+
+    html += `<tr class="row-day">`;
+    STAFF.forEach(st=>{
+      const cnt = sched[dk]?.[st]?.length||0;
+      const tfn = (TAREAS[st]||{})[dow]?.length||0;
+      html += `<td>🗓️ ${dayName} ${dayNum} ${monName}</td>`;
+      html += `<td class="day-count">${cnt>0?cnt+" limpieza"+(cnt>1?"s":""):tfn>0?"Solo tareas":"—"}</td>`;
+    });
+    html += `</tr>`;
+
+    // Content rows
+    const colData = STAFF.map(st=>{
+      const rows=[];
+      ((TAREAS[st]||{})[dow]||[]).forEach(t=>rows.push({type:"tarea",text:t}));
+      (sched[dk]?.[st]||[]).forEach(room=>rows.push({type:"unit",room}));
+      if(!rows.length) rows.push({type:"none"});
+      return rows;
+    });
+    const maxLen = Math.max(...colData.map(c=>c.length));
+
+    for(let ri=0;ri<maxLen;ri++){
+      html += `<tr>`;
+      STAFF.forEach((st,si)=>{
+        const item = colData[si][ri];
+        if(!item){ html+=`<td class="cell-empty"></td><td class="cell-empty"></td>`; return; }
+        if(item.type==="tarea"){
+          html+=`<td class="cell-tarea" colspan="2">${item.text}</td>`;
+        } else if(item.type==="unit"){
+          const key     = `${dk}|${item.room}`;
+          const estadoV = statuses[key] || "*Por confirmar*";
+          const eIdx    = ESTADOS.findIndex(e=>e.v===estadoV);
+          const eCls    = eIdx>=0?ESTADOS[eIdx].cls:"s5";
+          const opts    = ESTADOS.map((e,i)=>`<option value="${e.v}"${e.v===estadoV?" selected":""}>${e.emoji} ${e.v}</option>`).join("");
+          html+=`<td class="cell-unit">🏠 ${item.room}</td>`;
+          html+=`<td class="cell-estado ${eCls}"><select class="estado-sel ${eCls}" onchange="onEstadoChange('${wid}','${key}',this)" data-key="${key}">${opts}</select></td>`;
+        } else {
+          html+=`<td class="cell-none" colspan="2">🚫 No hay limpiezas programadas</td>`;
+        }
+      });
+      html+=`</tr>`;
+    }
+
+    html+=`<tr class="row-sep"><td colspan="${cols*2}"></td></tr>`;
+  }
+
+  html+=`</table></div>`;
+  document.getElementById("pane-r").innerHTML = html;
+
+  // Color selects on load
+  document.querySelectorAll(".estado-sel").forEach(colorSelect);
+}
+
+function onEstadoChange(wid, key, sel) {
+  const week = appData.weeks.find(w=>w.id===wid);
+  if (!week) return;
+  week.statuses[key] = sel.value;
+  colorSelect(sel);
+  // Refresh WA pane if visible
+  if (document.getElementById("tab-w")?.classList.contains("active")) buildWA(week);
+  scheduleSave();
+}
+
+function colorSelect(sel) {
+  const idx = ESTADOS.findIndex(e=>e.v===sel.value);
+  const cls = idx>=0 ? ESTADOS[idx].cls : "s5";
+  sel.className = `estado-sel ${cls}`;
+  sel.parentElement.className = `cell-estado ${cls}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// BUILD WHATSAPP
+// ═══════════════════════════════════════════════════════
+function buildWA(week) {
+  const { bookings, statuses, label } = week;
+  const today   = dateKey(new Date());
+  const pane    = document.getElementById("pane-w");
+  if (!pane) return;
+
+  const sorted = bookings.map(b=>b.date).sort();
+  if (!sorted.length) { pane.innerHTML='<div style="color:var(--muted);padding:20px">Sin datos.</div>'; return; }
+  const monday = getMondayOf(new Date(sorted[0]+"T12:00:00"));
+  const days   = [];
+  for(let d=new Date(monday);days.length<7;d.setDate(d.getDate()+1)) days.push(dateKey(new Date(d)));
+
+  // Construir mensaje por equipo
+  const msgs = {};
+  STAFF.forEach(st=>{
+    const units = bookings.filter(b=>b.staff===st);
+    if (!units.length) return;
+
+    // Agrupar por día
+    const byDay = {};
+    units.forEach(u=>{ if(!byDay[u.date])byDay[u.date]=[]; byDay[u.date].push(u.room); });
+
+    const d0  = new Date(sorted[0]+"T12:00:00");
+    let msg   = `🧹 *Reporte de limpieza*\n`;
+    msg      += `👤 Equipo: *${st}*\n`;
+    msg      += `📅 *${label}*\n`;
+    msg      += `─────────────────\n`;
+
+    days.forEach(dk=>{
+      const d    = new Date(dk+"T12:00:00");
+      const dow  = d.getDay();
+      const tfDia = (TAREAS[st]||{})[dow]||[];
+      const unsDia = byDay[dk]||[];
+      const hasSomething = tfDia.length>0||unsDia.length>0;
+      if (!hasSomething) return;
+
+      const dayName = DIAS[dow];
+      const dayNum  = d.getDate();
+      msg += `\n🗓️ *${dayName} ${dayNum}*\n`;
+      tfDia.forEach(t=>{ msg+=`${t}\n`; });
+      unsDia.forEach(room=>{
+        const key = `${dk}|${room}`;
+        const est = statuses[key]||"*Por confirmar*";
+        const ei  = ESTADOS.findIndex(e=>e.v===est);
+        const em  = ei>=0?ESTADOS[ei].emoji:"•";
+        msg+=`${em} *${room}* — ${est}\n`;
+      });
+    });
+
+    msg += `─────────────────\n`;
+    msg += `Total: ${units.length} limpieza${units.length!==1?"s":""}`;
+    msgs[st] = msg;
+  });
+
+  // También mensaje de HOY
+  let html = "";
+
+  // Sección "Update de hoy"
+  const todayCO = bookings.filter(b=>b.date===today);
+  if (todayCO.length > 0) {
+    const td   = new Date();
+    const tLbl = `${DIAS[td.getDay()]} ${td.getDate()} de ${MESES[td.getMonth()]}`;
+    html += `<p style="font-size:12px;color:var(--muted);margin-bottom:10px">📲 <strong style="color:var(--text)">Update de hoy</strong> — ${tLbl}</p>`;
+    html += `<div class="wa-grid" style="margin-bottom:28px">`;
+    STAFF.forEach(st=>{
+      const units = todayCO.filter(b=>b.staff===st);
+      const tareas = (TAREAS[st]||{})[td.getDay()]||[];
+      if (!units.length && !tareas.length) return;
+      let msg  = `🧹 *Limpiezas de hoy — ${tLbl}*\n`;
+      msg     += `👤 Equipo: *${st}*\n─────────────────\n`;
+      tareas.forEach(t=>{ msg+=`${t}\n`; });
+      if (tareas.length && units.length) msg+="\n";
+      units.forEach(u=>{
+        const key=`${today}|${u.room}`;
+        const est=statuses[key]||"*Por confirmar*";
+        const ei=ESTADOS.findIndex(e=>e.v===est);
+        msg+=`${ei>=0?ESTADOS[ei].emoji:"•"} *${u.room}* — ${est}\n`;
+      });
+      msg+=`─────────────────\nTotal: ${units.length+tareas.length} tarea${units.length+tareas.length!==1?"s":""}`;
+      html += waCard(st, msg, units.length, "hoy");
+    });
+    html += `</div>`;
+  }
+
+  // Sección "Reporte completo de la semana"
+  html += `<p style="font-size:12px;color:var(--muted);margin-bottom:10px">📋 <strong style="color:var(--text)">Reporte completo — ${label}</strong></p>`;
+  html += `<div class="wa-grid">`;
+  STAFF.forEach(st=>{ if(msgs[st]) html+=waCard(st, msgs[st], bookings.filter(b=>b.staff===st).length, "semana"); });
+  html += `</div>`;
+
+  pane.innerHTML = html;
+}
+
+function waCard(staff, msg, count, suffix) {
+  const isYury = staff==="Yury";
+  const hdrCls = isYury ? "staff-yury" : "staff-sofia";
+  const safeMsg = JSON.stringify(msg);
+  const btnId   = `wabtn-${staff}-${suffix}`;
+  const formatted = msg
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/\*(.*?)\*/g,"<strong>$1</strong>")
+    .replace(/\n/g,"<br>");
+  return `<div class="wa-card">
+    <div class="wa-card-header ${hdrCls}">
+      <div class="icon" style="background:rgba(255,255,255,.15)">${isYury?"👩":"👩"}</div>
+      <div>
+        <div class="name">${staff}</div>
+        <div class="count">${count} limpieza${count!==1?"s":""}</div>
+      </div>
+    </div>
+    <div class="wa-msg">${formatted}</div>
+    <button class="wa-copy" id="${btnId}" onclick='copyWA(${safeMsg},"${btnId}")'>📋 Copiar para WhatsApp</button>
+  </div>`;
+}
+
+function copyWA(text, btnId) {
+  const btn = document.getElementById(btnId);
+  navigator.clipboard.writeText(text).then(()=>waDone(btn)).catch(()=>{
+    const ta=document.createElement("textarea");ta.value=text;
+    ta.style.cssText="position:fixed;opacity:0";document.body.appendChild(ta);
+    ta.select();document.execCommand("copy");document.body.removeChild(ta);waDone(btn);
+  });
+}
+function waDone(btn) {
+  btn.textContent="✅ ¡Copiado!";btn.classList.add("done");
+  setTimeout(()=>{btn.innerHTML="📋 Copiar para WhatsApp";btn.classList.remove("done");},2500);
+}
+
+// ═══════════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════════
+function showAlert(msg,type) {
+  document.getElementById("content").innerHTML=`<div class="alert ${type}">${msg}</div><div class="empty"><div class="icon">📂</div><p>Revisa el CSV e intenta de nuevo.</p></div>`;
+}
+function showInlineAlert(msg,type) {
+  const el=document.getElementById("inlineAlert");
+  if(el) el.innerHTML=`<div class="alert ${type}" style="margin-bottom:12px">${msg}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+if (ghCfg.token) document.getElementById("saveBtn").style.display="";
+loadFromGitHub();
+</script>
+</body>
+</html>
