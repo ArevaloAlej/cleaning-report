@@ -1,1 +1,133 @@
-{ "weeks": [] }
+{
+  "weeks": [
+    {
+      "id": "w1780246859341",
+      "label": "Mayo Semana 5",
+      "bookings": [
+        {
+          "date": "2026-06-05",
+          "room": "7842-1",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-05",
+          "room": "7834-4",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-05",
+          "room": "JEFF-3",
+          "staff": "Yury"
+        },
+        {
+          "date": "2026-06-02",
+          "room": "JEFF-2",
+          "staff": "Yury"
+        },
+        {
+          "date": "2026-06-02",
+          "room": "JEFF-1",
+          "staff": "Yury"
+        },
+        {
+          "date": "2026-06-01",
+          "room": "JEFF-6",
+          "staff": "Yury"
+        },
+        {
+          "date": "2026-06-01",
+          "room": "7834-9",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-02",
+          "room": "7834-2",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-02",
+          "room": "7842-1",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-01",
+          "room": "7842-3",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-03",
+          "room": "7842-6",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-04",
+          "room": "7842-5",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-05",
+          "room": "7842-4",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-04",
+          "room": "7834-8",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-01",
+          "room": "7830-5",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-03",
+          "room": "7834-5",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-05",
+          "room": "7830-4",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-03",
+          "room": "7830-2",
+          "staff": "SOFIA"
+        },
+        {
+          "date": "2026-06-01",
+          "room": "699-2",
+          "staff": "Yury"
+        },
+        {
+          "date": "2026-06-01",
+          "room": "7830-6",
+          "staff": "SOFIA"
+        }
+      ],
+      "statuses": {
+        "2026-06-05|7842-1": "*Sin check-in*",
+        "2026-06-05|7834-4": "*Sin check-in*",
+        "2026-06-05|JEFF-3": "*Sin check-in*",
+        "2026-06-02|JEFF-2": "*Sin check-in*",
+        "2026-06-02|JEFF-1": "*Sin check-in*",
+        "2026-06-01|JEFF-6": "*Sin check-in*",
+        "2026-06-01|7834-9": "*Sin check-in*",
+        "2026-06-02|7834-2": "*Sin check-in*",
+        "2026-06-02|7842-1": "*Entra 3PM*",
+        "2026-06-01|7842-3": "*Sin check-in*",
+        "2026-06-03|7842-6": "*Sin check-in*",
+        "2026-06-04|7842-5": "*Sin check-in*",
+        "2026-06-05|7842-4": "*Sin check-in*",
+        "2026-06-04|7834-8": "*Sin check-in*",
+        "2026-06-01|7830-5": "*Sin check-in*",
+        "2026-06-03|7834-5": "*Sin check-in*",
+        "2026-06-05|7830-4": "*Sin check-in*",
+        "2026-06-03|7830-2": "*Sin check-in*",
+        "2026-06-01|699-2": "*Sin check-in*",
+        "2026-06-01|7830-6": "*Sin check-in*"
+      },
+      "importedAt": "2026-05-31T17:00:59.341Z"
+    }
+  ]
+}
